@@ -1,0 +1,31 @@
+import rospy
+from std_msgs.msg import String
+
+class whisper_response():
+    def __init__(self):
+        rospy.init_node('whisper_responder')
+        self.publisher_ = rospy.Publisher('whisper_recogs', String, queue_size=10)
+        self.subscription = rospy.Subscriber(
+            'keywords_detected',
+            String,
+            self.listener_callback
+        )
+
+    def listener_callback(self, msg):
+        if msg.data == 'Answering a question':
+            whisper_msg = rospy.wait_for_message('whisper_recogs', String)
+            response = processing_answer(whisper_msg.data)
+            self.publisher_.publish(String(data=response))
+
+def processing_answer(question):
+    if question in question_starts:
+        return response
+    else:
+        return 'Sorry, I can not response this question!'
+
+def main():
+    whisper_responder = whisper_response()
+    rospy.spin()
+
+if __name__ == '__main__':
+    main()
