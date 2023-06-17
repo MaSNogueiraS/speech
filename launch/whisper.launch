@@ -1,8 +1,8 @@
 <launch>
     <node name="whisper_node" pkg= "speech" type="demo_realtime_whisper.py" output="screen">
     </node>
-    <node name="keywords_node" pkg= "speech" type="keywords_recognizer.py" output="screen">
+    <node name="keyword_detector" pkg= "speech" type="keywords_recognizer.py" output="screen">
     </node>
-    <node name="answer_node" pkg= "speech" type="anser.py" output="screen">
+    <node name="answer_from_whisper" pkg= "speech" type="anser.py" output="screen">
     </node>
 </launch>
