@@ -25,7 +25,7 @@ class KeywordDetector(object):
         self.text_publisher.publish(String(data=self.last_msg_data))
 
         init_keywords = ['Hera', 'Herra', 'era']  # Initialization keywords
-        question_starts = ['who', 'when', 'where', 'what', 'how', 'why', 'can you', 'could you']
+        question_starts = ['who', 'when', 'where', 'what', 'how', 'why', 'can you', 'could you', 'think']
         direction_keywords = ['go', 'move', 'turn', 'stop']
         request_keywords = ['take', 'bring']
         task_keywords = ['take out the garbage', 'carry my luggage']
