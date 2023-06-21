@@ -3,6 +3,7 @@ from std_msgs.msg import String
 import openai
 from collections import deque
 import sys
+import subprocess
 
 sys.path.append('/home/robofei/Workspace/catkin_ws/src/hera_robot/hera_tasks/tasks/methods')
 
@@ -10,7 +11,7 @@ import General as General
 import Speech as Speech
 import Navigation as Navigation
 
-class MovingFromWhisper(object):
+class StartaTask(object):
     def __init__(self):
         rospy.init_node('Moving_from_whisper')
         self.general = General.General()
@@ -19,7 +20,7 @@ class MovingFromWhisper(object):
         self.model = "gpt-3.5-turbo"
         self.prompt = ""
         self.conversation = deque([{"role": "system", "content": "Você é a HERA (Assistente Robótica de Ambiente Residencial), um robô de serviço gentil e educado projetado para realizar interação e cooperação entre humanos e robôs, desenvolvido pela equipe RoboFEI@Home do Centro Universitário FEI. O nome Hera foi inspirado na deusa grega protetora. A equipe RoboFEI@Home é atualmente campeã mundial na Robocup Thailand."}], maxlen=11)
-        self.possible_places = ['kitchen', 'bedroom', 'living room']  # Places saved on the map
+        self.possible_tasks = ['recepcionist', 'storing groceries', 'carry my luggage']  # Ex. of tasks that we are almost doing
 
         self.text_subscriber = rospy.Subscriber(
             'last_text',  
@@ -63,25 +64,35 @@ class MovingFromWhisper(object):
             return "Sorry, I have a small problem with the ai that process the text responses and generate dynamic aknolodgment"
 
 
-    def check_location(self, direction):
-        for place in self.possible_places:
-            if place in direction.lower():
-                return place
-        return None
 
-    def move(self, direction):
-        place_to_go = self.check_location(direction)
-        if place_to_go:
-            acknowledgement = self.generate_acknowledgement(f"Moving to {place_to_go}")
+    #checks if the task requested is a quest that Hera do
+    def check_task_request(self, text):
+        for task in self.possible_tasks:
+            if task in text.lower():
+                return task
+        return None
+    
+    #This function uses the subprocess library to execute a bash command
+    def run_bash_command(self, command):
+        
+        completed_process = subprocess.run(command.split(), capture_output=True, text=True)
+        if completed_process.returncode != 0:
+            acknowledgement = self.generate_acknowledgement(f"Error: {completed_process.stderr}")
             print(acknowledgement)
-            self.navigation.goto(place_to_go)
         else:
-            known_places = ', '.join(self.possible_places)
-            acknowledgement = self.generate_acknowledgement(f"I do not know this place, but I know these places: {known_places}")
+            acknowledgement = self.generate_acknowledgement(f"Output: {completed_process.stdout}")
+            print(acknowledgement)
+    
+    def bash_command_task(self):
+        type_of_task = self.check_task_request(text=self.last_text_data)
+        if type_of_task:
+            self.run_bash_command(f"roslaunch my_package {type_of_task}.launch") #add the launch file
+        else:
+            acknowledgement = self.generate_acknowledgement("Task not recognized.")
             print(acknowledgement)
 
 def main():
-    moving_node = MovingFromWhisper()
+    startask_node = StartaTask()
     rospy.spin()
 
 if __name__ == '__main__':

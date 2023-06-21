@@ -48,18 +48,20 @@ class AnswerFromWhisper(object):
         except openai.api_errors.APIError as e:
             return "Desculpe, encontrei um problema ao processar a sua solicitação."
 
-    def generate_acknowledgement(self):
+    def generate_acknowledgement(self, context):
         try:
             response = openai.ChatCompletion.create(
                 model=self.model,
-                messages=[{"role": "system", "content": "A user has asked a question and the assistant is about to provide an answer."},{"role": "user", "content": "What should I say before providing the answer?"}],
+                messages=[{"role": "system", "content": ""},{"role": "user", "content": context}],
                 max_tokens=50,
                 temperature=0.6
             )
             acknowledgement = response['choices'][0]['message']['content'].strip()
             return acknowledgement
         except openai.api_errors.APIError as e:
-            return "Ok, só um segundo."
+            return "Sorry, I have a small problem with the ai that process the text responses and generate dynamic aknolodgment"
+
+
         
     #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
