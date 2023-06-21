@@ -1,6 +1,9 @@
 import rospy
 from std_msgs.msg import String
 
+#Author: MatS
+#Contact: mateus.scarpelli03@gmail.com
+
 class KeywordDetector(object):
     def __init__(self):
         rospy.init_node('keyword_detector')

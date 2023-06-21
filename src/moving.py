@@ -10,6 +10,9 @@ import General as General
 import Speech as Speech
 import Navigation as Navigation
 
+#Author: MatS
+#Contact: mateus.scarpelli03@gmail.com
+
 class MovingFromWhisper(object):
     def __init__(self):
         rospy.init_node('Moving_from_whisper')
@@ -35,6 +38,8 @@ class MovingFromWhisper(object):
         
         self.last_text_data = None
         self.last_processed_text = None
+        # Set your OpenAI API key
+        openai.api_key = "your-openai-api-key"
     
     def text_callback(self, msg):
         self.last_text_data = msg.data

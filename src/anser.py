@@ -3,6 +3,9 @@ from std_msgs.msg import String
 import openai
 from collections import deque
 
+#Author: MatS
+#Contact: mateus.scarpelli03@gmail.com
+
 class AnswerFromWhisper(object):
     def __init__(self):
         rospy.init_node('answer_from_whisper')
@@ -23,18 +26,20 @@ class AnswerFromWhisper(object):
         )
         
         self.last_text_data = None
+        self.last_processed_text = None
     
     def text_callback(self, msg):
         self.last_text_data = msg.data
 
     def keyword_response_callback(self, msg):
         if msg.data == 'Answering a question' and self.last_text_data:
+            # If the last_text_data is the same as the last processed text, do nothing
+            if self.last_text_data == self.last_processed_text:
+                return
             self.answer(self.last_text_data)
-
-    #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            # Store the last_text_data as the last processed text
+            self.last_processed_text = self.last_text_data
     
-    # The functions within these lines generate different messages to interact with people and improve the human-like conversation, where the robot does not just repeat the same phrases every time.
-
     def generate_error_message(self, error_context):
         try:
             response = openai.ChatCompletion.create(
@@ -61,14 +66,9 @@ class AnswerFromWhisper(object):
         except openai.api_errors.APIError as e:
             return "Sorry, I have a small problem with the ai that process the text responses and generate dynamic aknolodgment"
 
-
-        
-    #-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
     def answer(self, text):
         self.prompt = text
-        openai.api_key = "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"
+        openai.api_key = "api_key here"
         self.conversation.append({"role": "user", "content": self.prompt})
 
         try:
@@ -89,6 +89,7 @@ class AnswerFromWhisper(object):
             print(e)
             self.talk.speak_text(self, error_message)
             return error_message
+
 def main():
     answer_node = AnswerFromWhisper()
     rospy.spin()
