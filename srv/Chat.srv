@@ -1,4 +1,5 @@
 #Chat.srv
 string context
+string user_input
 ---
 string response

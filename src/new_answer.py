@@ -61,7 +61,7 @@ class AnswerFromWhisper(object):
 
     def answer(self, req):
         self.prompt = req.question
-        openai.api_key = "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"
+        openai.api_key = "Your openai Key-here"
         self.conversation.append({"role": "user", "content": self.prompt})
 
         try:

@@ -7,7 +7,7 @@ from speech.srv import Chat, ChatResponse
 
 class ChatService:
     def __init__(self) -> None:
-        self.openai_api_key = "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"  # Replace with your actual key
+        self.openai_api_key = "Your openai Key-here"  # Replace with your actual key
         openai.api_key = self.openai_api_key
 
     def chat(self, req):
@@ -15,8 +15,8 @@ class ChatService:
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo", 
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant.I will send to you an text and i need you to make it dynamic, so use the text i send you as a model and make it more personal but not changing too much of the meaning and in one line please"},
-                    {"role": "user", "content": req.context}
+                    {"role": "system", "content": req.context},
+                    {"role": "user", "content": req.user_input}
                 ]
             )
             return ChatResponse(response=response.choices[0].message['content'])
@@ -32,6 +32,7 @@ if __name__ == "__main__":
 
 
 
+
 #EX of use :
 
 # #!/usr/bin/env python3
@@ -44,7 +45,9 @@ if __name__ == "__main__":
 #     rospy.wait_for_service('chat_service')
 #     try:
 #         chat_service = rospy.ServiceProxy('chat_service', Chat)
-#         result = chat_service("Hello, my name is Hera. How can I assist you today?")
+#         context = "You are a helpful assistant."
+#         user_input = "Hello, my name is Hera. How can I assist you today?"
+#         result = chat_service(context, user_input)
 #         print("Received response: " + result.response)
 #     except rospy.ServiceException as e:
 #         print("Service call failed: %s"%e)

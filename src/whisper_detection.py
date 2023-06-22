@@ -18,6 +18,7 @@ class whisper_recogs(object):
         self.text = ''
         self.pub = rospy.Publisher('whisper_recogs', String, queue_size=10)
         self.init_keywords = ['Hera', 'Herra', 'era']  # Initialization keywords
+        self.context = "You are a helpful assistant.I will send to you an text and i need you to make it dynamic, so use the text i send you as a model and make it more personal but not changing too much of the meaning and in one line please"
         pass
         
         self.keyword_response_subscriber = rospy.Subscriber(
@@ -61,16 +62,16 @@ class whisper_recogs(object):
             print("Service call failed: %s"%e)
 
 
-    def chat_call(self, context):
+    def chat_call(self, context, user_input):
+        rospy.init_node('chat_call_node')
         rospy.wait_for_service('chat_service')
         try:
             chat_service = rospy.ServiceProxy('chat_service', Chat)
-            result = chat_service(context)
+            result = chat_service(context, user_input)
             print("Received response: " + result.response)
-            return result
         except rospy.ServiceException as e:
             print("Service call failed: %s"%e)
-            return ''
+
 
     def whisper_call(self):
         rospy.wait_for_service('whisper_phrase')
@@ -122,7 +123,7 @@ class whisper_recogs(object):
             txts = self.handle_service_response(5.0)
             if any(keyword in txts for keyword in self.init_keywords):
                 #say "how can i help you ?"
-                phrase = self.chat_call("Hello, my name is Hera, how can i assist you today?")
+                phrase = self.chat_call(self.context,"Hello, my name is Hera, how can i assist you today?")
                 self.speech_call(phrase.response)
                 text_to_iterate = self.whisper_call()
                 keyword = self.request_keyword_detection(text_to_iterate)
@@ -132,7 +133,7 @@ class whisper_recogs(object):
                 else:
                     break
             else:
-                phrase = self.chat_call("'I do not understand what you have said'")
+                phrase = self.chat_call(self.context, "'I do not understand what you have said'")
                 self.speech_call(phrase.response)
 
 
