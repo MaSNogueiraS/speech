@@ -5,4 +5,10 @@
     </node>
     <node name="answer_from_whisper" pkg= "speech" type="anser.py" output="screen">
     </node>
+    <!-- <node name="taking_for_user" pkg= "speech" type="take_for_me.py" output="screen">
+    </node>
+    <node name="Moving_from_whisper" pkg= "speech" type="moving.py" output="screen">
+    </node>
+    <node name="start_from_whisper" pkg= "speech" type="start_task.py" output="screen">
+    </node> -->
 </launch>

@@ -1,0 +1,5 @@
+<launch>
+    <node name="whisper_service" pkg= "speech" type="whisper_as_service.py" output="screen">
+    </node>
+    
+</launch>

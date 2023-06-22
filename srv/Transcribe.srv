@@ -1,0 +1,4 @@
+#RecordRequest.srv
+string command
+---
+string transcription

@@ -62,8 +62,15 @@ add_service_files(
   DIRECTORY 
   srv
   FILES
-  RecordAudio.srv
-  
+  RecordRequest.srv
+  Transcribe.srv
+  Speak.srv
+  Chat.srv
+  KeywordDetect.srv
+  MoveToPlace.srv
+  QuestionAnswer.srv
+  TaskCommand.srv
+
 )
 
 ## Generate actions in the 'action' folder

@@ -8,7 +8,8 @@ import whisper
 import torch
 import rospy
 from std_msgs.msg import String
-from speech.srv import RecordAudio  # Here the package name is 'speech' and the service name is 'RecordAudio'
+from speech.srv import RecordRequest  # Here the package name is 'speech' and the service name is 'RecordRequest'
+from speech.srv import Transcribe, TranscribeResponse
 
 from datetime import datetime, timedelta
 from queue import Queue
@@ -16,28 +17,104 @@ from tempfile import NamedTemporaryFile
 from time import sleep
 from sys import platform
 
-class WhisperRealtime:
+class WhisperRealtime(object):
     def __init__(self) -> None:
-        self.model = "medium"
-        self.non_english = True 
-        self.energy_threshold = 1000 
-        self.record_timeout = 2 
-        self.phrase_timeout = 3 
+        rospy.init_node('whisper_services', anonymous=True)
+        self.model= "small"
+        self.non_english = True
+        self.energy_threshold = 1000
+        self.record_timeout = 2
+        self.phrase_timeout = 3
         self.default_microphone = "pulse"
 
-        # Initialize the ROS node
-        rospy.init_node('whisper_node', anonymous=True)
+        self.recorder = sr.Recognizer()
+        self.recorder.energy_threshold = self.energy_threshold
+        self.recorder.dynamic_energy_threshold = True
+
+        if 'linux' in platform:
+            mic_name = self.default_microphone
+            for index, name in enumerate(sr.Microphone.list_microphone_names()):
+                if mic_name in name:
+                    self.source = sr.Microphone(sample_rate=16000, device_index=index)
+                    break
+        else:
+            self.source = sr.Microphone(sample_rate=16000)
+
+        model = self.model
+        if self.model != "large" and not self.non_english:
+            model = model + ".en"
+        self.audio_model = whisper.load_model(model)
+
+        print("load model")
+
         # Create a ROS publisher
         self.pub = rospy.Publisher('whisper_recogs', String, queue_size=10)
         # Create a ROS service
-        self.svc = rospy.Service('record_audio', RecordAudio, self.handle_record_audio)
+        self.svc = rospy.Service('record_audio', RecordRequest, self.handle_record_audio)
+        self.s = rospy.Service('whisper_phrase', Transcribe, self.phrase_whisper)
+
 
     def handle_record_audio(self, req):
         duration = req.duration
-        transcription = self.main(duration)
+        transcription = self.main_request(duration)
         return ' '.join(transcription)
 
-    def main(self, duration):
+    def phrase_whisper(self, req):
+        if req.command == "start":
+            transcription = self.record_and_transcribe()
+            return TranscribeResponse(transcription=transcription)
+        else:
+            return TranscribeResponse(transcription="Invalid command.")
+
+    def record_and_transcribe(self):
+        phrase_time = None
+        last_sample = bytes()
+        data_queue = Queue()
+        record_timeout = self.record_timeout
+        phrase_timeout = self.phrase_timeout
+        temp_file = NamedTemporaryFile().name
+        transcription = ['']
+
+        with self.source:
+            self.recorder.adjust_for_ambient_noise(self.source)
+
+        def record_callback(_, audio:sr.AudioData) -> None:
+            data = audio.get_raw_data()
+            data_queue.put(data)
+
+        self.recorder.listen_in_background(self.source, record_callback, phrase_time_limit=record_timeout)
+
+        while True:
+            now = datetime.utcnow()
+            if not data_queue.empty():
+                phrase_complete = False
+                if phrase_time and now - phrase_time > timedelta(seconds=phrase_timeout):
+                    last_sample = bytes()
+                    phrase_complete = True
+                phrase_time = now
+
+                while not data_queue.empty():
+                    data = data_queue.get()
+                    last_sample += data
+
+                audio_data = sr.AudioData(last_sample, self.source.SAMPLE_RATE, self.source.SAMPLE_WIDTH)
+                wav_data = io.BytesIO(audio_data.get_wav_data())
+
+                with open(temp_file, 'w+b') as f:
+                    f.write(wav_data.read())
+
+                result = self.audio_model.transcribe(temp_file, fp16=torch.cuda.is_available())
+                text = result['text'].strip()
+
+                if phrase_complete:
+                    transcription.append(text)
+                    self.pub.publish(text)
+                    return "\n".join(transcription)
+                else:
+                    transcription[-1] = text
+
+                            
+    def main_request(self, duration):
         phrase_time = None
         last_sample = bytes()
         data_queue = Queue()
@@ -61,11 +138,6 @@ class WhisperRealtime:
         else:
             source = sr.Microphone(sample_rate=16000)
 
-        model = self.model
-        if self.model != "large" and not self.non_english:
-            model = model + ".en"
-        audio_model = whisper.load_model(model)
-
         record_timeout = self.record_timeout
         phrase_timeout = self.phrase_timeout
 
@@ -81,7 +153,6 @@ class WhisperRealtime:
 
         recorder.listen_in_background(source, record_callback, phrase_time_limit=record_timeout)
 
-        print("Model loaded.\n")
         start_time = datetime.utcnow()
 
         while True:
@@ -106,7 +177,7 @@ class WhisperRealtime:
                     with open(temp_file, 'w+b') as f:
                         f.write(wav_data.read())
 
-                    result = audio_model.transcribe(temp_file, fp16=torch.cuda.is_available())
+                    result = self.audio_model.transcribe(temp_file, fp16=torch.cuda.is_available())
                     text = result['text'].strip()
 
                     if phrase_complete:
@@ -135,30 +206,4 @@ if __name__ == "__main__":
     ws = WhisperRealtime()
     rospy.spin()
 
-
-
-
-
-
-#EX of use :
-# import rospy
-# from speech.srv import RecordAudio  # Here the package name is 'speech' and the service name is 'RecordAudio'
-
-# def handle_service_response():
-#     rospy.wait_for_service('record_audio')  # Corrected to 'record_audio' to match the name of the service when it was declared
-#     try:
-#         # Create a handler
-#         record_audio = rospy.ServiceProxy('record_audio', RecordAudio)
-        
-#         # Call the service with the duration
-#         response = record_audio(5.0) # Here, 5.0 is the duration for which you want to record the audio.
-        
-#         # Print the response data
-#         print(response.data)
-
-#     except rospy.ServiceException as e:
-#         print("Service call failed: %s" % e)
-
-# if __name__ == '__main__':
-#     handle_service_response()
 

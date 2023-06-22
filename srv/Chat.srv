@@ -1,0 +1,4 @@
+#Chat.srv
+string context
+---
+string response
