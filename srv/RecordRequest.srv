@@ -1,0 +1,4 @@
+#RecordRequest.srv
+float32 duration
+---
+string response

@@ -1,0 +1,20 @@
+<launch>
+    <node name="dynamic_acknowledgement" pkg= "speech" type="dynamic_responses.py" output="screen">
+    </node>
+    <node name="whisper" pkg= "speech" type="master_whisper.py" output="screen">
+    </node>
+    <node name="answer" pkg= "speech" type="new_answer.py" output="screen">
+    </node>
+    <node name="keywords" pkg= "speech" type="new_keywords.py" output="screen">
+    </node>
+    <!-- <node name="move" pkg= "speech" type="new_move.py" output="screen">
+    </node> -->
+    <node name="speak" pkg= "speech" type="speak.py" output="screen">
+    </node>
+    <node name="task" pkg= "speech" type="task_initializer.py" output="screen">
+    </node>
+    <node name="run" pkg= "speech" type="whisper_detection.py" output="screen">
+    </node>
+    
+    
+</launch>
